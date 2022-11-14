@@ -1,7 +1,7 @@
 # THIS SCRIPT IS A WORK IN PROGRESS
 
 # Summary
-Pulls our SMSPXE log from the \\engr-mecmdp-01\logs and pulls just the MACs, to identify bootlooping machines.
+Pulls our SMSPXE log from the \\engr-mecmdp-01\logs and pulls just the MACs, to help identify bootlooping machines.
 
 # Usage
 WIP
