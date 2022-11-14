@@ -19,5 +19,5 @@ function Get-MacsFromSmsPxeLog {
 		}
 	}
 	
-	$data | Sort "Count" -Descending
+	$data | Sort -Property @{ Expression = {$_.Count}; Ascending = $false }, Mac
 }
