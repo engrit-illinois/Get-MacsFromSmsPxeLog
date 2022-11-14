@@ -8,8 +8,16 @@ function Get-MacsFromSmsPxeLog {
 	# https://stackoverflow.com/questions/33913878/how-to-get-the-captured-groups-from-select-string
 	$matches = $content | Select-String $macRegex | Select -ExpandProperty "Matches"
 	
-	$macs = $matches.Value
+	$macs = ($matches | Select -ExpandProperty "Value").ToUpper()
+	$macsUnique = $macs | Select -Unique
 	
-	$macs
+	$data = $macsUnique | ForEach-Object {
+		$mac = $_
+		[PSCustomObject]@{
+			"Mac" = $mac
+			"Count" = $macs | Where {$_ -eq $mac} | Measure-Object | Select -ExpandProperty "Count"
+		}
+	}
 	
+	$data | Sort "Count" -Descending
 }
