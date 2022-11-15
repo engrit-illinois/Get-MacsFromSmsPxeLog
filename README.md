@@ -7,7 +7,8 @@ This script just pulls all MAC addresses from the current content of `SMSPXE.log
 - Must be run as a user with permission to `\\engr-mecmdp-01\logs`.  
 
 # Usage
-`Get-MacsFromSmsPxeLog`  
+1. Download `Get-MacsFromSmsPxeLog.psm1` to `$HOME\Documents\WindowsPowerShell\Modules\Get-MacsFromSmsPxeLog\Get-MacsFromSmsPxeLog.psm1`
+2. Run it: `Get-MacsFromSmsPxeLog`  
 
 # Example
 <img src=".\Get-MacsFromSmsPxeLog_example.png" />
