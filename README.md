@@ -13,6 +13,8 @@ This script just pulls all MAC addresses from the current content of `SMSPXE.log
 3. Run it: `Get-MacsFromSmsPxeLog`  
 
 # Example
+In this example, you can infer that the most seen MAC is bootlooping and spamming the log. Each PXE attempt by a machine will generate roughly 2-4 occurrences of the machine's MAC in the log.  
+
 <img src=".\Get-MacsFromSmsPxeLog_example.png" />
 
 # Parameters
