@@ -1,5 +1,10 @@
 function Get-MacsFromSmsPxeLog {
 	
+	param(
+		[string]$Path = "\\engr-mecmdp-01\logs\SMSPXE.log",
+		[string]$TimezoneModifier = "+360"
+	)
+	
 	# Log lines look like the following, generally
 	<#
 		<![LOG[$message]LOG]!><time="$timestamp" date="$date" component="SMSPXE" context="" type="1" thread="$threadId" file="$file:$line">
@@ -28,28 +33,64 @@ function Get-MacsFromSmsPxeLog {
 	#>
 	
 	# Get the log content
-	$content = Get-Content -Path "\\engr-mecmdp-01\logs\SMSPXE.log"
+	$content = Get-Content -Path $Path
+	
+	# Replace newlines with spaces to make the regex much simpler
+	# https://powershell-guru.com/powershell-tip-117-remove-whitespaces-from-a-string/
+	$content = $content -replace "`n"," "
+	
+	# Define a regex pattern that matches log lines
+	$lineRegex = '(<!\[LOG\[(.*)\]LOG]!><time="(.*)" date="(.*)" component.*>)'
+	$lineMatches = $content | Select-String $lineRegex | Select -ExpandProperty "Matches"
 	
 	# Define a regex pattern that matches MAC addresses
 	# https://stackoverflow.com/questions/4260467/what-is-a-regular-expression-for-a-mac-address
-	$macRegex = "(([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2}))"
+	$macRegex = '(([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2}))'
 	
-	# Grab all of the matches as "Match" objects
-	# https://stackoverflow.com/questions/33913878/how-to-get-the-captured-groups-from-select-string
-	$matches = $content | Select-String $macRegex | Select -ExpandProperty "Matches"
+	$lines = $lineMatches | ForEach-Object {
+		$line = $_
+		
+		$msg = $line.Groups[2].Value
+		$line | Add-Member -NotePropertyName "Message" -NotePropertyValue $msg
+		
+		$timestamp = $line.Groups[3].Value
+		$line | Add-Member -NotePropertyName "Timestamp" -NotePropertyValue $timestamp
+		
+		$date = $line.Groups[4].Value
+		$line | Add-Member -NotePropertyName "Date" -NotePropertyValue $date
+		
+		$time = $timestamp.Replace($TimezoneModifier,"")
+		$dateTime = Get-Date "$time $date"
+		$line | Add-Member -NotePropertyName "DateTime" -NotePropertyValue $dateTime
+		
+		# This could return an array of MAC strings instead of a single MAC string, if more than one MAC is present in the $msg.
+		$macs = $msg.ToUpper() | Select-String $macRegex | Select -ExpandProperty "Matches" | Select -ExpandProperty "Value"
+		$line | Add-Member -NotePropertyName "Macs" -NotePropertyValue $macs
+		
+		$line
+	}
 	
-	# Grab the MAC from each Match, and uppercase it for consistency
-	$macs = ($matches | Select -ExpandProperty "Value").ToUpper()
+	# The following will break if more than one MAC was present in the $msg.
+	# Not sure how I would handle that, but so far I haven't seen this happen.
+	# I'd probably loop through the lines which have MACs, loop through the _potentially_ multiple MACs, join all MACs into a single string, and then regex that.
+	# But in the interest of avoiding another loop I'll ignore that for now, unless it becomes an issue.
+	$macs = $lines | Where { $_.Macs } | Select -ExpandProperty "Macs"
 	
 	# Generate an array of unique MACs
 	$macsUnique = $macs | Select -Unique
 	
-	# Create an array of new objects representing each unique MAC and it's number of occurrences
+	# Create an array of new objects representing each unique MAC and it's statistics
 	$data = $macsUnique | ForEach-Object {
 		$mac = $_
+		
+		# Get all lines where $mac occurs
+		$occurrences = $lines | Where {$_.Macs -eq $mac}
+		
 		[PSCustomObject]@{
 			"Mac" = $mac
-			"Count" = $macs | Where {$_ -eq $mac} | Measure-Object | Select -ExpandProperty "Count"
+			"Count" = $occurrences | Measure-Object | Select -ExpandProperty "Count"
+			"FirstSeen" = $occurrences | Measure-Object -Property DateTime -Minimum | Select -ExpandProperty "Minimum"
+			"LastSeen" = $occurrences | Measure-Object -Property DateTime -Maximum | Select -ExpandProperty "Maximum"
 		}
 	}
 	
