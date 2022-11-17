@@ -7,10 +7,8 @@ This script just pulls all MAC addresses from the current content of `SMSPXE.log
 - Must be run as a user with permission to `\\engr-mecmdp-01\logs`.  
 
 # Usage
-1. Download `Get-MacsFromSmsPxeLog.psm1` to the following path (create the path if needed):
-    - [Windows PowerShell 5.1](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_modules?view=powershell-5.1#how-to-install-a-module): `$HOME\Documents\WindowsPowerShell\Modules\Get-MacsFromSmsPxeLog\Get-MacsFromSmsPxeLog.psm1`
-    - [PowerShell 6+](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_modules?view=powershell-7.3#how-to-install-a-module): `$HOME\Documents\PowerShell\Modules\Get-MacsFromSmsPxeLog\Get-MacsFromSmsPxeLog.psm1`
-3. Run it: `Get-MacsFromSmsPxeLog`  
+1. Download `Get-MacsFromSmsPxeLog.psm1` to the appropriate subdirectory of your PowerShell [modules directory](https://github.com/engrit-illinois/how-to-install-a-custom-powershell-module).
+2. Run it: `Get-MacsFromSmsPxeLog`  
 
 # Example
 In this example, you can infer that the most seen MAC is bootlooping and spamming the log. Each PXE attempt by a machine will generate roughly 2-4 occurrences of the machine's MAC in the log.  
