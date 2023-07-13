@@ -1,8 +1,7 @@
 function Get-MacsFromSmsPxeLog {
 	
 	param(
-		[string]$Path = "\\engr-mecmdp-01\logs\SMSPXE.log",
-		[string]$TimezoneModifier = "+360"
+		[string]$Path = "\\engr-mecmdp-01\logs\SMSPXE.log"
 	)
 	
 	# Log lines look like the following, generally
@@ -59,8 +58,19 @@ function Get-MacsFromSmsPxeLog {
 		$date = $line.Groups[4].Value
 		$line | Add-Member -NotePropertyName "Date" -NotePropertyValue $date
 		
-		$time = $timestamp.Replace($TimezoneModifier,"")
+		# Deal with weird time offset
+		$offsetIndex = $timestamp.IndexOf("+")
+		if($offsetIndex -lt 0) {
+			$offsetIndex = $timestamp.IndexOf("-")
+		}
+		
+		if($offsetIndex -ge 0) {
+			$offset = $timestamp.Substring($offsetIndex)
+			$time = $timestamp.Replace($offset,"")
+		}
+				
 		$dateTime = Get-Date "$time $date"
+		
 		$line | Add-Member -NotePropertyName "DateTime" -NotePropertyValue $dateTime
 		
 		# This could return an array of MAC strings instead of a single MAC string, if more than one MAC is present in the $msg.
