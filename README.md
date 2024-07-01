@@ -18,11 +18,15 @@ Note: this example image is from before the module accepted multiple paths.
 
 # Parameters
 
-### -Path \<string[]\>
-Optional string array.  
+### -Paths \<string[]\>
+Required string array unless specifying `-UseDefaultsFor`.  
 Specifies the file path(s) to the SMSPXE.log(s) to parse.  
-Default is `@("\\engr-mecmpxe-01\logs\SMSPXE.log","\\engr-mecmpxe-02\logs\SMSPXE.log")`.  
-Note: SMSPXE.log is regularly cycled out and an older log with a timestamped filename is kept in the same directory.   
+Note: SMSPXE.log is regularly cycled out and an older log with a timestamped filename is kept in the same directory.  
+
+### -UseDefaultsFor \<"ENGR" | "CBTF"\>
+Required string unless specifying `-Paths`.  
+When `ENGR` is specified, the paths used will be `@("\\engr-mecmpxe-01\logs\SMSPXE.log","\\engr-mecmpxe-02\logs\SMSPXE.log")`.  
+When `CBTF` is specified, the paths used will be `@("\\cbtf-dp-01\e$\SMS_DP$\sms\logs\SMSPXE.log","\\cbtf-dp-02\e$\SMS_DP$\sms\logs\SMSPXE.log")`.  
 
 # Notes
 By mseng3. See my other projects here: https://github.com/mmseng/code-compendium.

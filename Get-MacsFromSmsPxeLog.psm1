@@ -1,8 +1,30 @@
 function Get-MacsFromSmsPxeLog {
 	
 	param(
-		[string[]]$Paths = @("\\engr-mecmpxe-01\logs\SMSPXE.log","\\engr-mecmpxe-02\logs\SMSPXE.log")
+		[string[]]$Paths,
+		
+		[ValidateSet('ENGR', 'CBTF')]
+		[string]$UseDefaultsFor,
+		
+		[string[]]$EngrPaths = @("\\engr-mecmpxe-01\logs\SMSPXE.log","\\engr-mecmpxe-02\logs\SMSPXE.log"),
+		
+		[string[]]$CbtfPaths = @("\\cbtf-dp-01\e$\SMS_DP$\sms\logs\SMSPXE.log","\\cbtf-dp-02\e$\SMS_DP$\sms\logs\SMSPXE.log")
 	)
+	
+	if(-not $Paths) {
+		if($UseDefaultsFor) {
+			$UseDefaultsFor = $UseDefaultsFor.ToUpper()
+			switch($UseDefaultsFor) {
+				"ENGR" { $Paths = $EngrPaths }
+				"CBTF" { $Paths = $CbtfPaths }
+				Default { Throw "Neither -Paths nor -UseDefaultsFor were specified!" }
+			}
+		}
+		else {
+			Throw "Neither -Paths nor -UseDefaultsFor were specified!"
+		}
+	}
+	
 	
 	# Log lines look like the following, generally
 	<#
