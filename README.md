@@ -17,7 +17,7 @@ The default sorting groups identical MACs seen across multiple logs (i.e. server
 <br />
 <br />
 
-This is an older screenshot with different sorting, but in this example, you can infer that the most seen MAC is bootlooping and spamming the log. Each PXE attempt by a machine will generate roughly 2-4 occurrences of the machine's MAC in the log.  
+This is an older screenshot with different sorting, but in this example, you can see that the most seen MAC has been referenced in the log 116 times within the span of 8 hours, so it's almost certainly bootlooping with PXE in the boot order, and is thus spamming the log. Each PXE attempt by a machine will generate roughly 2-4 occurrences of the machine's MAC in the log. In this case that would imply that the machine is bootlooping roughly once every 10-15 minutes.  
 <br />
 <img src=".\Get-MacsFromSmsPxeLog_example2.png" />
 <br />
