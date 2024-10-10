@@ -6,6 +6,9 @@ function Get-MacsFromSmsPxeLog {
 		[ValidateSet('ENGR', 'CBTF')]
 		[string]$UseDefaultsFor = "ENGR",
 		
+		[ValidateSet('MacGroupHighestCount', 'ServerCount', 'MacServer')]
+		[string]$SortStyle = "MacGroupHighestCount",
+		
 		[string[]]$EngrPaths = @("\\engr-mecmpxe-01.ad.uillinois.edu\logs\SMSPXE.log","\\engr-mecmpxe-02.ad.uillinois.edu\logs\SMSPXE.log"),
 		
 		[string[]]$CbtfPaths = @("\\cbtf-dp-01.ad.uillinois.edu\logs\SMSPXE.log","\\cbtf-dp-02.ad.uillinois.edu\logs\SMSPXE.log"),
@@ -135,36 +138,53 @@ function Get-MacsFromSmsPxeLog {
 	}
 	
 	function Sort-Data($data) {
-		# Original, basic sorting:
-		#$data = $data | Sort -Property Server, @{ Expression = {$_.Count}; Ascending = $false }, Mac
-		
-		# More useful, but more difficult sorting:
-		
-		# Get unique MACs
-		$uniqueMacs = $data | Select -ExpandProperty "Mac" | Select -Unique
-		
-		# Make groups for each MAC
-		$groups = $uniqueMacs | ForEach-Object {
-			$mac = $_
-			
-			# Get all entries from all servers related to this specific MAC
-			$entries = $data | Where { $_.Mac -eq $mac } | Sort "Server"
-			
-			[PSCustomObject]@{
-				"Mac" = $mac
-				"Entries" = $entries
+		switch($SortStyle) {
+			"ServerCount" {
+				# Original sorting, by Server and then by Count:
+				$newData = $data | Sort -Property "Server", @{ Expression = {$_.Count}; Ascending = $false }, Mac
 			}
-		}
-		
-		# Sort groups by MAC
-		$groups = $groups | Sort "Mac"
-		
-		# Re-create $data array, sorted by group
-		$newData = $groups | ForEach-Object {
-			$group = $_
-			$entries = $group.Entries
-			$entries | ForEach-Object {
-				$_
+			"MacServer" {
+				# Sorting by MAC and then by Server:
+				$newData = $data | Sort -Property "Mac", @{ Expression = {$_.Count}; Ascending = $false }, Mac
+			}
+			"MacGroupHighestCount" {
+				# More useful, but more difficult sorting, grouping identical MACs and then sorting those groups by the highest count of any MAC in the group:
+				
+				# Get unique MACs
+				$uniqueMacs = $data | Select -ExpandProperty "Mac" | Select -Unique
+				
+				# Make groups for each MAC
+				$groups = $uniqueMacs | ForEach-Object {
+					$mac = $_
+					
+					# Get all entries from all servers related to this specific MAC
+					$entries = $data | Where { $_.Mac -eq $mac } | Sort "Server"
+					
+					# Get highest count of all MACs in this group
+					$highestCount = $entries | Sort "Count" -Descending | Select -First 1 | Select -ExpandProperty "Count"
+					
+					[PSCustomObject]@{
+						"Mac" = $mac
+						"Entries" = $entries
+						"HighestCount" = $highestCount
+					}
+				}
+				
+				# Sort groups by highest count
+				$groups = $groups | Sort "HighestCount" -Descending
+				
+				# Re-create $data array, sorted by group and then by count
+				$newData = $groups | ForEach-Object {
+					$group = $_
+					$entries = $group.Entries
+					$entries | ForEach-Object {
+						$_
+					}
+				}
+			}
+			
+			Default {
+				Throw "Invalid -SortStyle specified!"
 			}
 		}
 		
