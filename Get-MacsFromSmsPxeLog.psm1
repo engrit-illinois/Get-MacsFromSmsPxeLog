@@ -4,24 +4,21 @@ function Get-MacsFromSmsPxeLog {
 		[string[]]$Paths,
 		
 		[ValidateSet('ENGR', 'CBTF')]
-		[string]$UseDefaultsFor,
+		[string]$UseDefaultsFor = "ENGR",
 		
-		[string[]]$EngrPaths = @("\\engr-mecmpxe-01\logs\SMSPXE.log","\\engr-mecmpxe-02\logs\SMSPXE.log"),
+		[string[]]$EngrPaths = @("\\engr-mecmpxe-01.ad.uillinois.edu\logs\SMSPXE.log","\\engr-mecmpxe-02.ad.uillinois.edu\logs\SMSPXE.log"),
 		
-		[string[]]$CbtfPaths = @("\\cbtf-dp-01\e$\SMS_DP$\sms\logs\SMSPXE.log","\\cbtf-dp-02\e$\SMS_DP$\sms\logs\SMSPXE.log")
+		[string[]]$CbtfPaths = @("\\cbtf-dp-01.ad.uillinois.edu\logs\SMSPXE.log","\\cbtf-dp-02.ad.uillinois.edu\logs\SMSPXE.log"),
+		
+		[switch]$PassThru
 	)
 	
 	if(-not $Paths) {
-		if($UseDefaultsFor) {
-			$UseDefaultsFor = $UseDefaultsFor.ToUpper()
-			switch($UseDefaultsFor) {
-				"ENGR" { $Paths = $EngrPaths }
-				"CBTF" { $Paths = $CbtfPaths }
-				Default { Throw "Neither -Paths nor -UseDefaultsFor were specified!" }
-			}
-		}
-		else {
-			Throw "Neither -Paths nor -UseDefaultsFor were specified!"
+		$UseDefaultsFor = $UseDefaultsFor.ToUpper()
+		switch($UseDefaultsFor) {
+			"ENGR" { $Paths = $EngrPaths }
+			"CBTF" { $Paths = $CbtfPaths }
+			Default { Throw "Neither -Paths nor -UseDefaultsFor were specified!" }
 		}
 	}
 	
@@ -125,8 +122,8 @@ function Get-MacsFromSmsPxeLog {
 			$occurrences = $lines | Where {$_.Macs -eq $mac}
 			
 			[PSCustomObject]@{
-				"Server" = $server
 				"Mac" = $mac
+				"Server" = $server
 				"Count" = $occurrences | Measure-Object | Select -ExpandProperty "Count"
 				"FirstSeen" = $occurrences | Measure-Object -Property DateTime -Minimum | Select -ExpandProperty "Minimum"
 				"LastSeen" = $occurrences | Measure-Object -Property DateTime -Maximum | Select -ExpandProperty "Maximum"
@@ -134,16 +131,60 @@ function Get-MacsFromSmsPxeLog {
 		}
 		
 		# Return the munged data
-		$data | Sort -Property Server, @{ Expression = {$_.Count}; Ascending = $false }, Mac
+		$data
+	}
+	
+	function Sort-Data($data) {
+		# Original, basic sorting:
+		#$data = $data | Sort -Property Server, @{ Expression = {$_.Count}; Ascending = $false }, Mac
+		
+		# More useful, but more difficult sorting:
+		
+		# Get unique MACs
+		$uniqueMacs = $data | Select -ExpandProperty "Mac" | Select -Unique
+		
+		# Make groups for each MAC
+		$groups = $uniqueMacs | ForEach-Object {
+			$mac = $_
+			
+			# Get all entries from all servers related to this specific MAC
+			$entries = $data | Where { $_.Mac -eq $mac } | Sort "Server"
+			
+			[PSCustomObject]@{
+				"Mac" = $mac
+				"Entries" = $entries
+			}
+		}
+		
+		# Sort groups by MAC
+		$groups = $groups | Sort "Mac"
+		
+		# Re-create $data array, sorted by group
+		$newData = $groups | ForEach-Object {
+			$group = $_
+			$entries = $group.Entries
+			$entries | ForEach-Object {
+				$_
+			}
+		}
+		
+		$newData
 	}
 	
 	function Do-Stuff {
 		
-		$Paths | ForEach-Object {
+		$data = $Paths | ForEach-Object {
 			$path = $_
 			Get-Data $path
-		} | Format-Table
+		}
+		$data = Sort-Data $data
 		
+		if($PassThru) {
+			$data
+		}
+		else {
+			$data | Format-Table
+		}
 	}
 	
 	Do-Stuff
